@@ -1,26 +1,24 @@
 pipeline {
-  /* -------- Global -------- */
-  agent { label 'docker' }          // agent must have docker cli
+  agent any   // ← Use any available agent for now
+
   options {
-    skipDefaultCheckout()           // we'll handle checkout ourselves
-    buildDiscarder(logRotator(daysToKeepStr: '14'))  // keep logs tidy
-    timestamps()                    // nicer console logs
+    skipDefaultCheckout()
+    buildDiscarder(logRotator(daysToKeepStr: '14'))
+    timestamps()
   }
 
   environment {
-    REGISTRY       = 'docker.io'                   // could be ghcr.io, ECR, etc.
-    IMAGE_NAME     = 'mhorlabisi/devop_app_project'         // change to your repo
+    REGISTRY       = 'docker.io'
+    IMAGE_NAME     = 'mhorlabisi/devop_app_project'
     DOCKER_CREDS   = credentials('dockerhub')
   }
 
-  /* -------- Stages -------- */
   stages {
 
     stage('Checkout') {
       steps {
         checkout scm
         script {
-          // Generate a unique, traceable tag e.g. "feature-login-abc1234"
           env.IMAGE_TAG = "${env.BRANCH_NAME}-${env.GIT_COMMIT.take(7)}"
         }
       }
@@ -37,7 +35,7 @@ pipeline {
       }
     }
 
-    stage('Push to Docker Hub') {
+    stage('Push to Docker Hub') {
       steps {
         withCredentials([usernamePassword(credentialsId: 'dockerhub',
                                           usernameVariable: 'DOCKER_USERNAME',
@@ -51,9 +49,8 @@ pipeline {
       }
     }
 
-    /* ---- Optional deploy step ---- */
     stage('Deploy to Kubernetes') {
-      when { branch 'main' }       // deploy only from main (adjust as needed)
+      when { branch 'main' }
       steps {
         withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
           sh '''
@@ -65,13 +62,14 @@ pipeline {
     }
   }
 
-  /* -------- Post section -------- */
   post {
     success {
       echo "✅ Build & push of ${IMAGE_NAME}:${IMAGE_TAG} successful"
     }
     always {
-      cleanWs(deleteDirs: true)    // reclaim workspace
+      node {
+        cleanWs(deleteDirs: true)
+      }
     }
   }
 }
