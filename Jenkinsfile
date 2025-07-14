@@ -1,5 +1,5 @@
 pipeline {
-  agent any   // ← Use any available agent for now
+  agent any  // Use any available agent
 
   options {
     skipDefaultCheckout()
@@ -8,9 +8,9 @@ pipeline {
   }
 
   environment {
-    REGISTRY       = 'docker.io'
-    IMAGE_NAME     = 'mhorlabisi/devop_app_project'
-    DOCKER_CREDS   = credentials('dockerhub')
+    REGISTRY     = 'docker.io'
+    IMAGE_NAME   = 'mhorlabisi/devop_app_project'
+    DOCKER_CREDS = credentials('dockerhub')
   }
 
   stages {
@@ -37,9 +37,11 @@ pipeline {
 
     stage('Push to Docker Hub') {
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub',
-                                          usernameVariable: 'DOCKER_USERNAME',
-                                          passwordVariable: 'DOCKER_PASSWORD')]) {
+        withCredentials([usernamePassword(
+          credentialsId: 'dockerhub',
+          usernameVariable: 'DOCKER_USERNAME',
+          passwordVariable: 'DOCKER_PASSWORD'
+        )]) {
           sh '''
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${REGISTRY}
             docker push ${IMAGE_NAME}:${IMAGE_TAG}
@@ -50,7 +52,9 @@ pipeline {
     }
 
     stage('Deploy to Kubernetes') {
-      when { branch 'main' }
+      when {
+        branch 'main'
+      }
       steps {
         withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
           sh '''
@@ -67,9 +71,7 @@ pipeline {
       echo "✅ Build & push of ${IMAGE_NAME}:${IMAGE_TAG} successful"
     }
     always {
-      node {
-        cleanWs(deleteDirs: true)
-      }
+      cleanWs(deleteDirs: true)
     }
   }
 }
