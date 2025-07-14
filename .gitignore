@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.sqlite3
+.env
+.vscode/
+.vagrant/
+.idea/# Ignore all private keys
+*.pem
+*.key
+*.p12
+id_rsa
+id_rsa.*
+*.crt
+*.der
+
+# Optional: ignore credentials & secrets
+.env
+*.env
+secrets.*
