@@ -1,5 +1,5 @@
 pipeline {
-  agent any  // Use any available agent
+  agent any
 
   options {
     skipDefaultCheckout()
@@ -19,7 +19,9 @@ pipeline {
       steps {
         checkout scm
         script {
-          env.IMAGE_TAG = "${env.BRANCH_NAME}-${env.GIT_COMMIT.take(7)}"
+          def gitCommit = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+          def branchName = env.BRANCH_NAME ?: sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+          env.IMAGE_TAG = "${branchName}-${gitCommit}"
         }
       }
     }
@@ -29,7 +31,7 @@ pipeline {
         sh """
           docker build \\
             --label build.branch=${BRANCH_NAME} \\
-            --label build.sha=${GIT_COMMIT} \\
+            --label build.sha=${IMAGE_TAG} \\
             -t ${IMAGE_NAME}:${IMAGE_TAG} .
         """
       }
