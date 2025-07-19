@@ -4,7 +4,7 @@ metadata:
   name: devop-app-project-service
 spec:
   selector:
-    app: devop-app-project
+    app: devop-app-project   # must match Deployment pod labels
   ports:
     - protocol: TCP
       port: 80

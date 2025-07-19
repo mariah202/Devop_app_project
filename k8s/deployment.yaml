@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: devop-app-project
-          image: mhorlabisi/devop_app_project:latest
+          image: mhorlabisi/devop_app_project:latest  # Change to dynamic tag in Jenkins pipeline
           ports:
             - containerPort: 80
