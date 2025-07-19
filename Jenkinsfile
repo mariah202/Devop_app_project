@@ -54,4 +54,51 @@ pipeline {
     }
 
     stage('Apply K8s Manifests') {
-      when { branch 'm
+      when {
+        branch "main"
+      }
+      steps {
+        sh '''
+          export KUBECONFIG=$HOME/.kube/config
+          kubectl apply --validate=false -f k8s/
+        '''
+      }
+    }
+
+    stage('Deploy to Kubernetes') {
+      when {
+        branch "main"
+      }
+      steps {
+        sh '''
+          export KUBECONFIG=$HOME/.kube/config
+          kubectl set image deployment/devop-app-project devop-app-project=${IMAGE_NAME}:${IMAGE_TAG} --record
+        '''
+      }
+    }
+
+    stage('Check Pods') {
+      when {
+        branch "main"
+      }
+      steps {
+        sh '''
+          export KUBECONFIG=$HOME/.kube/config
+          kubectl get pods -o wide
+        '''
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ Build & push of ${IMAGE_NAME}:${IMAGE_TAG} successful"
+    }
+    failure {
+      echo "❌ Build or deployment failed. Please check the logs."
+    }
+    always {
+      cleanWs(deleteDirs: true)
+    }
+  }
+}
