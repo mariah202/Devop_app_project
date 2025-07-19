@@ -11,6 +11,7 @@ pipeline {
     REGISTRY     = 'docker.io'
     IMAGE_NAME   = 'mhorlabisi/devop_app_project'
     DOCKER_CREDS = credentials('dockerhub')
+    KUBECONFIG   = "$HOME/.kube/config"
   }
 
   stages {
@@ -26,7 +27,7 @@ pipeline {
       }
     }
 
-    stage('Build Docker image') {
+    stage('Build Docker Image') {
       steps {
         sh """
           docker build \\
@@ -45,7 +46,7 @@ pipeline {
           passwordVariable: 'DOCKER_PASSWORD'
         )]) {
           sh '''
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${REGISTRY}
+            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin ${REGISTRY} || exit 1
             docker push ${IMAGE_NAME}:${IMAGE_TAG}
             docker logout ${REGISTRY}
           '''
@@ -53,11 +54,10 @@ pipeline {
       }
     }
 
-    stage('Apply K8s Manifests') {
+    stage('Apply Kubernetes Manifests') {
       when { branch 'main' }
       steps {
         sh '''
-          export KUBECONFIG=$HOME/.kube/config
           kubectl apply -f k8s/
         '''
       }
@@ -67,16 +67,25 @@ pipeline {
       when { branch 'main' }
       steps {
         sh '''
-          export KUBECONFIG=$HOME/.kube/config
           kubectl set image deployment/devop-app-project devop-app-project=${IMAGE_NAME}:${IMAGE_TAG} --record
         '''
+      }
+    }
+
+    stage('Check Pods') {
+      when { branch 'main' }
+      steps {
+        sh 'kubectl get pods -o wide'
       }
     }
   }
 
   post {
     success {
-      echo "✅ Build & push of ${IMAGE_NAME}:${IMAGE_TAG} successful"
+      echo "✅ Build and deployment of ${IMAGE_NAME}:${IMAGE_TAG} completed successfully."
+    }
+    failure {
+      echo "❌ Build or deployment failed. Please check the logs."
     }
     always {
       cleanWs(deleteDirs: true)
