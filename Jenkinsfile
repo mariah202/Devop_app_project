@@ -56,24 +56,20 @@ pipeline {
     stage('Apply K8s Manifests') {
       when { branch 'main' }
       steps {
-        withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
-          sh '''
-            export KUBECONFIG=$KUBECONFIG_FILE
-            kubectl apply -f k8s/
-          '''
-        }
+        sh '''
+          export KUBECONFIG=$HOME/.kube/config
+          kubectl apply -f k8s/
+        '''
       }
     }
 
     stage('Deploy to Kubernetes') {
       when { branch 'main' }
       steps {
-        withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
-          sh '''
-            export KUBECONFIG=$KUBECONFIG_FILE
-            kubectl set image deployment/devop-app-project devop-app-project=${IMAGE_NAME}:${IMAGE_TAG} --record
-          '''
-        }
+        sh '''
+          export KUBECONFIG=$HOME/.kube/config
+          kubectl set image deployment/devop-app-project devop-app-project=${IMAGE_NAME}:${IMAGE_TAG} --record
+        '''
       }
     }
   }
